@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PDF Invoice Renamer</title>
+<style>
+:root {
+  --bg: #0f1115;
+  --panel: #171a21;
+  --panel-border: #262a35;
+  --accent: #5b8cff;
+  --accent-hover: #7aa2ff;
+  --text: #e8eaf0;
+  --text-dim: #9aa0ae;
+  --success: #3ecf8e;
+  --error: #ff6b6b;
+  --input-bg: #0d0f14;
+  --overlay: rgba(0,0,0,0.55);
+}
+:root[data-theme="light"] {
+  --bg: #f2f3f7;
+  --panel: #ffffff;
+  --panel-border: #e1e3ea;
+  --accent: #3f6bd6;
+  --accent-hover: #2f56b8;
+  --text: #1b1e27;
+  --text-dim: #6a6f7d;
+  --success: #1f9d6c;
+  --error: #d64545;
+  --input-bg: #f7f8fb;
+  --overlay: rgba(20,22,30,0.35);
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 48px 20px;
+  transition: background 0.2s, color 0.2s;
+}
+.top-bar {
+  position: fixed;
+  top: 16px;
+  right: 20px;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.icon-btn {
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  color: var(--text);
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 13px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: border-color 0.15s, background 0.15s;
+}
+.icon-btn:hover { border-color: var(--accent); }
+.card {
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: 16px;
+  padding: 32px;
+  width: 100%;
+  max-width: 480px;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+  transition: background 0.2s, border-color 0.2s;
+}
+.view { display: none; }
+.view.active { display: block; }
+h1 { font-size: 20px; margin: 0 0 6px 0; font-weight: 600; }
+.subtitle { color: var(--text-dim); font-size: 13px; margin: 0 0 28px 0; line-height: 1.5; }
+.drop-zone {
+  border: 1.5px dashed var(--panel-border);
+  border-radius: 12px;
+  padding: 24px;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+  margin-bottom: 22px;
+}
+.drop-zone:hover, .drop-zone.dragover { border-color: var(--accent); background: rgba(91,140,255,0.06); }
+.drop-zone .file-icon { font-size: 28px; margin-bottom: 8px; }
+.drop-zone .main-text { font-size: 14px; color: var(--text); }
+.drop-zone .sub-text { font-size: 12px; color: var(--text-dim); margin-top: 4px; }
+.drop-zone.has-file { border-color: var(--success); background: rgba(62,207,142,0.06); }
+#fileInput { display: none; }
+.field { margin-bottom: 18px; }
+label { display: block; font-size: 13px; font-weight: 500; margin-bottom: 6px; color: var(--text-dim); }
+input[type="date"], input[type="text"], input[type="number"] {
+  width: 100%;
+  padding: 11px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--panel-border);
+  background: var(--input-bg);
+  color: var(--text);
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.15s, background 0.2s, color 0.2s;
+  font-family: inherit;
+}
+input:focus { border-color: var(--accent); }
+:root[data-theme="dark"] input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.8); cursor: pointer; }
+.checkbox-field { margin-bottom: 18px; }
+.checkbox-label { display: flex; align-items: center; gap: 9px; font-size: 13px; color: var(--text); font-weight: 400; cursor: pointer; margin-bottom: 0; }
+.checkbox-label input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--accent); cursor: pointer; flex-shrink: 0; }
+.hint { color: var(--text-dim); font-weight: 400; font-size: 11px; }
+.format-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  background: var(--input-bg);
+  border: 1px solid var(--panel-border);
+  border-radius: 8px;
+  padding: 11px 12px;
+  margin-bottom: 22px;
+}
+.format-row .format-value { font-family: "SF Mono", Consolas, Monaco, monospace; font-size: 12.5px; color: var(--text); overflow-wrap: anywhere; }
+.format-row a.edit-link { font-size: 12.5px; color: var(--accent); text-decoration: none; white-space: nowrap; font-weight: 600; cursor: pointer; }
+.format-row a.edit-link:hover { text-decoration: underline; }
+.preview {
+  background: var(--input-bg);
+  border: 1px solid var(--panel-border);
+  border-radius: 8px;
+  padding: 12px 14px;
+  font-size: 13px;
+  color: var(--text-dim);
+  margin: 22px 0;
+  word-break: break-all;
+  font-family: "SF Mono", Consolas, Monaco, monospace;
+}
+.preview .label { display: block; font-family: -apple-system, sans-serif; color: var(--text-dim); font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 6px; }
+.preview .filename { color: var(--text); font-size: 14px; }
+.preview .filename.placeholder { color: var(--text-dim); font-style: italic; }
+.btn-row { display: flex; flex-direction: column; gap: 10px; }
+button.primary-btn, button.download-btn {
+  width: 100%;
+  padding: 13px;
+  border-radius: 10px;
+  border: none;
+  background: var(--accent);
+  color: #fff;
+  font-size: 14.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, opacity 0.15s;
+}
+button.primary-btn:hover:not(:disabled), button.download-btn:hover:not(:disabled) { background: var(--accent-hover); }
+button.primary-btn:disabled, button.download-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+button.secondary-btn {
+  width: 100%;
+  padding: 13px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 14.5px;
+  font-weight: 600;
+  background: transparent;
+  border: 1px solid var(--panel-border);
+  color: var(--text);
+  transition: border-color 0.15s, background 0.15s;
+}
+button.secondary-btn:hover:not(:disabled) { background: rgba(91,140,255,0.08); border-color: var(--accent); }
+.status { text-align: center; font-size: 12.5px; margin-top: 12px; min-height: 16px; color: var(--success); }
+.status.error { color: var(--error); }
+.footnote { text-align: center; font-size: 11px; color: var(--text-dim); margin-top: 24px; line-height: 1.5; }
+.footnote a { color: var(--accent); cursor: pointer; }
+.history-section { margin-top: 26px; border-top: 1px solid var(--panel-border); padding-top: 18px; }
+.history-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.history-header h2 { font-size: 12.5px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-dim); margin: 0; font-weight: 600; }
+.history-header button { background: none; border: none; color: var(--text-dim); font-size: 11.5px; cursor: pointer; text-decoration: underline; }
+.history-header button:hover { color: var(--accent); }
+.history-list { list-style: none; margin: 0; padding: 0; max-height: 180px; overflow-y: auto; }
+.history-list li { font-size: 12.5px; color: var(--text); padding: 8px 10px; border-radius: 6px; background: var(--input-bg); margin-bottom: 6px; font-family: "SF Mono", Consolas, Monaco, monospace; word-break: break-all; }
+.history-list li .time { display: block; font-family: -apple-system, sans-serif; color: var(--text-dim); font-size: 10.5px; margin-top: 2px; }
+.history-empty { font-size: 12.5px; color: var(--text-dim); font-style: italic; }
+.modal-overlay { position: fixed; inset: 0; background: var(--overlay); display: none; align-items: center; justify-content: center; z-index: 1000; }
+.modal-overlay.visible { display: flex; }
+.modal-box {
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: 14px;
+  padding: 28px 26px;
+  max-width: 340px;
+  width: 90%;
+  text-align: center;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+  animation: modal-in 0.15s ease-out;
+}
+@keyframes modal-in { from { transform: scale(0.96); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+.modal-icon { font-size: 30px; margin-bottom: 10px; }
+.modal-title { font-size: 15.5px; font-weight: 600; margin-bottom: 6px; }
+.modal-message { font-size: 13px; color: var(--text-dim); margin-bottom: 20px; word-break: break-word; line-height: 1.5; white-space: pre-line; }
+.modal-box button { padding: 10px 22px; border-radius: 8px; border: none; background: var(--accent); color: #fff; font-size: 13.5px; font-weight: 600; cursor: pointer; }
+.modal-box button:hover { background: var(--accent-hover); }
+.token-table { width: 100%; border-collapse: collapse; margin-bottom: 22px; font-size: 12.5px; }
+.token-table th, .token-table td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--panel-border); }
+.token-table th { color: var(--text-dim); font-weight: 600; text-transform: uppercase; font-size: 10.5px; letter-spacing: 0.03em; }
+.token-table td code { background: var(--input-bg); padding: 2px 6px; border-radius: 4px; font-family: "SF Mono", Consolas, Monaco, monospace; }
+.example-chip {
+  display: inline-block;
+  background: var(--input-bg);
+  border: 1px solid var(--panel-border);
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-family: "SF Mono", Consolas, Monaco, monospace;
+  font-size: 12px;
+  cursor: pointer;
+  margin: 4px 6px 4px 0;
+  transition: border-color 0.15s;
+}
+.example-chip:hover { border-color: var(--accent); }
+</style>
+</head>
+<body>
+
+<div class="top-bar">
+  <button class="icon-btn" id="themeToggle">🌙 <span id="themeLabel">Dark</span></button>
+</div>
+
+<!-- ========== UPLOADER VIEW (default, shown when URL has no #format hash) ========== -->
+<div class="card view" id="uploaderView">
+  <h1>PDF Invoice Renamer</h1>
+  <p class="subtitle">Upload a PDF, fill in the details below, and download a renamed copy. Everything runs locally in your browser — no upload, no internet required.</p>
+
+  <div class="drop-zone" id="dropZone">
+    <div class="file-icon">📄</div>
+    <div class="main-text" id="dropZoneText">Click or drag a PDF here</div>
+    <div class="sub-text" id="dropZoneSubText">.pdf files only</div>
+    <input type="file" id="fileInput" accept="application/pdf,.pdf">
+  </div>
+
+  <div class="field">
+    <label for="dateInput">Date</label>
+    <input type="date" id="dateInput">
+  </div>
+
+  <div class="field">
+    <label for="amountInput">Amount</label>
+    <input type="number" id="amountInput" step="0.01" min="0" inputmode="decimal" placeholder="0.00">
+  </div>
+
+  <div class="field">
+    <label for="invoiceInput">Invoice Number</label>
+    <input type="text" id="invoiceInput" placeholder="e.g. 129048009">
+  </div>
+
+  <div class="field checkbox-field">
+    <label class="checkbox-label" for="decimalCheckbox">
+      <input type="checkbox" id="decimalCheckbox" checked>
+      <span>Include decimals in amount (e.g. 1234.00 vs 1234)</span>
+    </label>
+  </div>
+
+  <div class="format-row">
+    <div>
+      <div class="hint" style="margin-bottom:4px;">Current filename format</div>
+      <div class="format-value" id="currentFormatDisplay">{month} {day}- {amount}_{invoice}.pdf</div>
+    </div>
+    <a class="edit-link" id="goToFormatLink">Edit format →</a>
+  </div>
+
+  <div class="preview">
+    <span class="label">Output filename</span>
+    <span class="filename placeholder" id="filenamePreview">Upload a file and fill in the fields…</span>
+  </div>
+
+  <div class="btn-row">
+    <button class="download-btn" id="downloadBtn" disabled>Download Renamed PDF</button>
+    <button class="secondary-btn" id="saveAsBtn" disabled>Choose Location & Save…</button>
+  </div>
+  <div class="status" id="statusMsg"></div>
+
+  <div class="history-section">
+    <div class="history-header">
+      <h2>Recent renames (this session)</h2>
+      <button id="clearHistoryBtn">Clear</button>
+    </div>
+    <ul class="history-list" id="historyList"></ul>
+    <div class="history-empty" id="historyEmpty">No files renamed yet this session.</div>
+  </div>
+
+  <p class="footnote">This tool does not modify the original PDF's contents or upload it anywhere — it only creates a renamed local copy. "Choose Location & Save…" lets you pick a folder (supported in Chrome/Edge); otherwise it falls back to your browser's default downloads folder. The session history clears when you close this tab.</p>
+</div>
+
+<!-- ========== FORMAT SETTINGS VIEW (only shown when URL hash is #format) ========== -->
+<div class="card view" id="formatView">
+  <h1>Filename Format Settings</h1>
+  <p class="subtitle">Edit the template used to build the renamed PDF filename. Changes are saved on this device and picked up automatically by the uploader.</p>
+
+  <div class="field">
+    <label for="formatInput">Filename format template</label>
+    <input type="text" id="formatInput" value="{month} {day}- {amount}_{invoice}.pdf">
+  </div>
+
+  <div class="preview">
+    <span class="label">Live example</span>
+    <span class="filename" id="livePreview">Jul 03- 1234.00_129048009.pdf</span>
+  </div>
+
+  <div class="btn-row" style="margin-bottom: 22px;">
+    <button class="primary-btn" id="saveFormatBtn">Save Format</button>
+    <button class="secondary-btn" id="resetFormatBtn">Reset to Default</button>
+  </div>
+  <div class="status" id="formatStatusMsg"></div>
+
+  <h2 style="font-size:13px; margin: 26px 0 10px 0; color: var(--text-dim); text-transform:uppercase; letter-spacing:0.04em;">Available tokens</h2>
+  <table class="token-table">
+    <thead><tr><th>Token</th><th>Meaning</th><th>Example</th></tr></thead>
+    <tbody>
+      <tr><td><code>{month}</code></td><td>3-letter month abbreviation</td><td>Jul</td></tr>
+      <tr><td><code>{monthnum}</code></td><td>2-digit month number</td><td>07</td></tr>
+      <tr><td><code>{day}</code></td><td>2-digit day of month</td><td>03</td></tr>
+      <tr><td><code>{year}</code></td><td>4-digit year</td><td>2026</td></tr>
+      <tr><td><code>{amount}</code></td><td>Amount (decimals per checkbox on main page)</td><td>1234.00</td></tr>
+      <tr><td><code>{invoice}</code></td><td>Invoice number as typed</td><td>129048009</td></tr>
+    </tbody>
+  </table>
+
+  <h2 style="font-size:13px; margin: 0 0 10px 0; color: var(--text-dim); text-transform:uppercase; letter-spacing:0.04em;">Quick examples (click to use)</h2>
+  <div style="margin-bottom: 8px;">
+    <span class="example-chip" data-template="{month} {day}- {amount}_{invoice}.pdf">{month} {day}- {amount}_{invoice}.pdf</span>
+    <span class="example-chip" data-template="{month} {day} {year}- {amount}_{invoice}.pdf">{month} {day} {year}- {amount}_{invoice}.pdf</span>
+    <span class="example-chip" data-template="{invoice}_{month} {day}- {amount}.pdf">{invoice}_{month} {day}- {amount}.pdf</span>
+    <span class="example-chip" data-template="{monthnum}-{day}-{year}_{amount}_{invoice}.pdf">{monthnum}-{day}-{year}_{amount}_{invoice}.pdf</span>
+    <span class="example-chip" data-template="{month} {day} {amount}_{invoice}.pdf">{month} {day} {amount}_{invoice}.pdf</span>
+  </div>
+
+  <p class="footnote">If your template doesn't end in ".pdf", it's added automatically. Invoice numbers have characters not allowed in filenames stripped out automatically. <a id="backToUploaderLink">← Back to uploader</a></p>
+</div>
+
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal-box">
+    <div class="modal-icon" id="modalIcon">✅</div>
+    <div class="modal-title" id="modalTitle">Success</div>
+    <div class="modal-message" id="modalMessage"></div>
+    <button id="modalCloseBtn">OK</button>
+  </div>
+</div>
+
+<script>
+(function () {
+  const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  const DEFAULT_FORMAT = "{month} {day}- {amount}_{invoice}.pdf";
+  const FORMAT_KEY = "pdfRenamer_filenameFormat";
+  const THEME_KEY = "pdfRenamer_theme";
+  const HISTORY_KEY = "pdfRenamer_history"; // sessionStorage - cleared per tab session
+
+  // ================= THEME =================
+  const themeToggle = document.getElementById('themeToggle');
+  const themeLabel = document.getElementById('themeLabel');
+  function applyTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    themeLabel.textContent = theme === 'dark' ? 'Dark' : 'Light';
+    themeToggle.firstChild.textContent = theme === 'dark' ? '🌙 ' : '☀️ ';
+  }
+  function initTheme() {
+    const saved = localStorage.getItem(THEME_KEY) ||
+      (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+    applyTheme(saved);
+  }
+  themeToggle.addEventListener('click', () => {
+    const current = document.documentElement.getAttribute('data-theme');
+    const next = current === 'dark' ? 'light' : 'dark';
+    localStorage.setItem(THEME_KEY, next);
+    applyTheme(next);
+  });
+  initTheme();
+
+  // ================= MODAL =================
+  const modalOverlay = document.getElementById('modalOverlay');
+  const modalIcon = document.getElementById('modalIcon');
+  const modalTitle = document.getElementById('modalTitle');
+  const modalMessage = document.getElementById('modalMessage');
+  const modalCloseBtn = document.getElementById('modalCloseBtn');
+  function showModal(icon, title, message) {
+    modalIcon.textContent = icon;
+    modalTitle.textContent = title;
+    modalMessage.textContent = message;
+    modalOverlay.classList.add('visible');
+  }
+  function hideModal() { modalOverlay.classList.remove('visible'); }
+  modalCloseBtn.addEventListener('click', hideModal);
+  modalOverlay.addEventListener('click', (e) => { if (e.target === modalOverlay) hideModal(); });
+
+  // ================= ROUTING (hash-based: #format shows settings view) =================
+  const uploaderView = document.getElementById('uploaderView');
+  const formatView = document.getElementById('formatView');
+  function renderRoute() {
+    const isFormat = window.location.hash === '#format';
+    uploaderView.classList.toggle('active', !isFormat);
+    formatView.classList.toggle('active', isFormat);
+    if (isFormat) loadFormatView();
+    else refreshFormatDisplay();
+  }
+  window.addEventListener('hashchange', renderRoute);
+  document.getElementById('goToFormatLink').addEventListener('click', () => { window.location.hash = '#format'; });
+  document.getElementById('backToUploaderLink').addEventListener('click', () => { window.location.hash = ''; });
+
+  function getFormatTemplate() {
+    return localStorage.getItem(FORMAT_KEY) || DEFAULT_FORMAT;
+  }
+
+  // ================= UPLOADER VIEW LOGIC =================
+  const dropZone = document.getElementById('dropZone');
+  const dropZoneText = document.getElementById('dropZoneText');
+  const dropZoneSubText = document.getElementById('dropZoneSubText');
+  const fileInput = document.getElementById('fileInput');
+  const dateInput = document.getElementById('dateInput');
+  const amountInput = document.getElementById('amountInput');
+  const invoiceInput = document.getElementById('invoiceInput');
+  const decimalCheckbox = document.getElementById('decimalCheckbox');
+  const currentFormatDisplay = document.getElementById('currentFormatDisplay');
+  const filenamePreview = document.getElementById('filenamePreview');
+  const downloadBtn = document.getElementById('downloadBtn');
+  const saveAsBtn = document.getElementById('saveAsBtn');
+  const statusMsg = document.getElementById('statusMsg');
+  const historyList = document.getElementById('historyList');
+  const historyEmpty = document.getElementById('historyEmpty');
+  const clearHistoryBtn = document.getElementById('clearHistoryBtn');
+
+  let uploadedFile = null;
+
+  function refreshFormatDisplay() {
+    currentFormatDisplay.textContent = getFormatTemplate();
+    updatePreview();
+  }
+
+  dropZone.addEventListener('click', () => fileInput.click());
+  dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('dragover'); });
+  dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+  dropZone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dropZone.classList.remove('dragover');
+    const files = e.dataTransfer.files;
+    if (files && files.length) handleFile(files[0]);
+  });
+  fileInput.addEventListener('change', (e) => {
+    if (e.target.files && e.target.files.length) handleFile(e.target.files[0]);
+  });
+
+  function handleFile(file) {
+    if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
+      setStatus('Please choose a PDF file.', true);
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = function (evt) {
+      uploadedFile = { name: file.name, arrayBuffer: evt.target.result, type: file.type || 'application/pdf' };
+      dropZone.classList.add('has-file');
+      dropZoneText.textContent = file.name;
+      dropZoneSubText.textContent = 'Click to replace file';
+      setStatus('');
+      updatePreview();
+    };
+    reader.onerror = function () { setStatus('Could not read the file. Please try again.', true); };
+    reader.readAsArrayBuffer(file);
+  }
+
+  [dateInput, amountInput, invoiceInput].forEach((el) => {
+    el.addEventListener('input', updatePreview);
+    el.addEventListener('change', updatePreview);
+  });
+  decimalCheckbox.addEventListener('change', updatePreview);
+
+  function buildFilename() {
+    if (!dateInput.value || amountInput.value === '' || !invoiceInput.value.trim()) return null;
+    const parts = dateInput.value.split('-');
+    if (parts.length !== 3) return null;
+    const year = parts[0];
+    const monthIdx = parseInt(parts[1], 10) - 1;
+    const day = parts[2];
+    if (monthIdx < 0 || monthIdx > 11) return null;
+
+    const monthAbbr = MONTHS[monthIdx];
+    const monthNum = String(monthIdx + 1).padStart(2, '0');
+    const dayStr = day.padStart(2, '0');
+
+    const amountNum = parseFloat(amountInput.value);
+    if (isNaN(amountNum)) return null;
+    const amountStr = decimalCheckbox.checked ? amountNum.toFixed(2) : String(Math.round(amountNum));
+
+    const invoice = invoiceInput.value.trim().replace(/[\\/:*?"<>|]/g, '');
+
+    const template = getFormatTemplate();
+    let filename = template
+      .replace(/\{month\}/g, monthAbbr)
+      .replace(/\{monthnum\}/g, monthNum)
+      .replace(/\{day\}/g, dayStr)
+      .replace(/\{year\}/g, year)
+      .replace(/\{amount\}/g, amountStr)
+      .replace(/\{invoice\}/g, invoice);
+
+    if (!filename.toLowerCase().endsWith('.pdf')) filename += '.pdf';
+    return filename;
+  }
+
+  function updatePreview() {
+    const filename = buildFilename();
+    if (filename) {
+      filenamePreview.textContent = filename;
+      filenamePreview.classList.remove('placeholder');
+    } else {
+      filenamePreview.textContent = 'Upload a file and fill in the fields…';
+      filenamePreview.classList.add('placeholder');
+    }
+    const ready = !!(uploadedFile && filename);
+    downloadBtn.disabled = !ready;
+    saveAsBtn.disabled = !ready;
+  }
+
+  // ---- Session history (sessionStorage - cleared when tab closes) ----
+  function getHistory() {
+    try { return JSON.parse(sessionStorage.getItem(HISTORY_KEY)) || []; }
+    catch (e) { return []; }
+  }
+  function saveHistoryList(history) { sessionStorage.setItem(HISTORY_KEY, JSON.stringify(history)); }
+  function addToHistory(filename) {
+    const history = getHistory();
+    history.unshift({ filename, time: new Date().toLocaleString() });
+    saveHistoryList(history.slice(0, 30));
+    renderHistory();
+  }
+  function renderHistory() {
+    const history = getHistory();
+    historyList.innerHTML = '';
+    if (history.length === 0) {
+      historyEmpty.style.display = 'block';
+      historyList.style.display = 'none';
+      return;
+    }
+    historyEmpty.style.display = 'none';
+    historyList.style.display = 'block';
+    history.forEach((entry) => {
+      const li = document.createElement('li');
+      li.innerHTML = entry.filename.replace(/</g, '&lt;') + '<span class="time">' + entry.time + '</span>';
+      historyList.appendChild(li);
+    });
+  }
+  clearHistoryBtn.addEventListener('click', () => {
+    sessionStorage.removeItem(HISTORY_KEY);
+    renderHistory();
+  });
+  renderHistory();
+
+  downloadBtn.addEventListener('click', () => {
+    if (!uploadedFile) { setStatus('Please upload a PDF first.', true); return; }
+    const filename = buildFilename();
+    if (!filename) { setStatus('Please fill in date, amount, and invoice number.', true); return; }
+    try {
+      triggerBrowserDownload(filename);
+      setStatus('Downloaded as "' + filename + '"');
+      addToHistory(filename);
+      showModal('✅', 'Download complete', 'Saved as "' + filename + '" to your default downloads folder.');
+    } catch (err) {
+      setStatus('Something went wrong creating the file.', true);
+    }
+  });
+
+  saveAsBtn.addEventListener('click', async () => {
+    if (!uploadedFile) { setStatus('Please upload a PDF first.', true); return; }
+    const filename = buildFilename();
+    if (!filename) { setStatus('Please fill in date, amount, and invoice number.', true); return; }
+
+    if (window.showSaveFilePicker) {
+      try {
+        const handle = await window.showSaveFilePicker({
+          suggestedName: filename,
+          types: [{ description: 'PDF file', accept: { 'application/pdf': ['.pdf'] } }]
+        });
+        const writable = await handle.createWritable();
+        await writable.write(uploadedFile.arrayBuffer);
+        await writable.close();
+        setStatus('Saved as "' + filename + '"');
+        addToHistory(filename);
+        showModal('✅', 'Save complete', 'Saved as "' + filename + '" to the location you chose.');
+      } catch (err) {
+        if (err && err.name === 'AbortError') {
+          setStatus('Save cancelled.');
+        } else {
+          setStatus('Could not save the file. Falling back to default download.', true);
+          triggerBrowserDownload(filename);
+          addToHistory(filename);
+          showModal('✅', 'Download complete', 'Saved as "' + filename + '" to your default downloads folder.');
+        }
+      }
+    } else {
+      setStatus('Location picker not supported in this browser — using default download instead.');
+      triggerBrowserDownload(filename);
+      addToHistory(filename);
+      showModal('✅', 'Download complete', 'Saved as "' + filename + '" to your default downloads folder.');
+    }
+  });
+
+  function triggerBrowserDownload(filename) {
+    const blob = new Blob([uploadedFile.arrayBuffer], { type: uploadedFile.type });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+  }
+
+  function setStatus(msg, isError) {
+    statusMsg.textContent = msg;
+    statusMsg.classList.toggle('error', !!isError);
+  }
+
+  // ================= FORMAT SETTINGS VIEW LOGIC =================
+  const formatInput = document.getElementById('formatInput');
+  const livePreview = document.getElementById('livePreview');
+  const saveFormatBtn = document.getElementById('saveFormatBtn');
+  const resetFormatBtn = document.getElementById('resetFormatBtn');
+  const formatStatusMsg = document.getElementById('formatStatusMsg');
+
+  function buildExample(template) {
+    let filename = template
+      .replace(/\{month\}/g, 'Jul')
+      .replace(/\{monthnum\}/g, '07')
+      .replace(/\{day\}/g, '03')
+      .replace(/\{year\}/g, '2026')
+      .replace(/\{amount\}/g, '1234.00')
+      .replace(/\{invoice\}/g, '129048009');
+    if (!filename.toLowerCase().endsWith('.pdf')) filename += '.pdf';
+    return filename;
+  }
+  function updateLivePreview() {
+    const template = formatInput.value.trim() || DEFAULT_FORMAT;
+    livePreview.textContent = buildExample(template);
+  }
+  formatInput.addEventListener('input', updateLivePreview);
+
+  function loadFormatView() {
+    formatInput.value = getFormatTemplate();
+    updateLivePreview();
+    formatStatusMsg.textContent = '';
+  }
+
+  document.querySelectorAll('.example-chip').forEach((chip) => {
+    chip.addEventListener('click', () => {
+      formatInput.value = chip.getAttribute('data-template');
+      updateLivePreview();
+    });
+  });
+
+  saveFormatBtn.addEventListener('click', () => {
+    const template = formatInput.value.trim() || DEFAULT_FORMAT;
+    localStorage.setItem(FORMAT_KEY, template);
+    formatStatusMsg.textContent = 'Format saved.';
+    formatStatusMsg.classList.remove('error');
+    showModal('✅', 'Format saved', 'Your filename format has been updated to:\n"' + buildExample(template) + '"\n\nThe uploader will use this format from now on.');
+  });
+
+  resetFormatBtn.addEventListener('click', () => {
+    formatInput.value = DEFAULT_FORMAT;
+    updateLivePreview();
+    localStorage.setItem(FORMAT_KEY, DEFAULT_FORMAT);
+    formatStatusMsg.textContent = 'Reset to default format.';
+    formatStatusMsg.classList.remove('error');
+    showModal('✅', 'Format reset', 'Filename format reset to the default:\n"' + DEFAULT_FORMAT + '"');
+  });
+
+  // ================= INITIAL ROUTE =================
+  renderRoute();
+})();
+</script>
+
+</body>
+</html>
