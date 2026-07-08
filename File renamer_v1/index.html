@@ -6,11 +6,13 @@
 <title>PDF Invoice Renamer</title>
 <style>
 :root {
-  --bg: #0f1115;
+  --bg: #0b0d12;
+  --sidebar-bg: #12141b;
   --panel: #171a21;
   --panel-border: #262a35;
   --accent: #5b8cff;
   --accent-hover: #7aa2ff;
+  --accent-tint: rgba(91,140,255,0.12);
   --text: #e8eaf0;
   --text-dim: #9aa0ae;
   --success: #3ecf8e;
@@ -20,10 +22,12 @@
 }
 :root[data-theme="light"] {
   --bg: #f2f3f7;
+  --sidebar-bg: #ffffff;
   --panel: #ffffff;
   --panel-border: #e1e3ea;
   --accent: #3f6bd6;
   --accent-hover: #2f56b8;
+  --accent-tint: rgba(63,107,214,0.08);
   --text: #1b1e27;
   --text-dim: #6a6f7d;
   --success: #1f9d6c;
@@ -32,54 +36,235 @@
   --overlay: rgba(20,22,30,0.35);
 }
 * { box-sizing: border-box; }
-body {
+html, body {
   margin: 0;
+  height: 100%;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   background: var(--bg);
   color: var(--text);
-  min-height: 100vh;
-  display: flex;
-  align-items: flex-start;
-  justify-content: center;
-  padding: 48px 20px;
   transition: background 0.2s, color 0.2s;
 }
-.top-bar {
+.app-shell {
+  display: flex;
+  min-height: 100vh;
+}
+
+/* ---------- SIDEBAR ---------- */
+.sidebar {
+  width: 240px;
+  flex-shrink: 0;
+  background: var(--sidebar-bg);
+  border-right: 1px solid var(--panel-border);
+  padding: 24px 16px;
+  display: flex;
+  flex-direction: column;
   position: fixed;
-  top: 16px;
-  right: 20px;
-  display: flex;
-  gap: 8px;
-  align-items: center;
+  top: 0;
+  left: 0;
+  height: 100vh;
+  transition: background 0.2s, border-color 0.2s;
 }
-.icon-btn {
-  background: var(--panel);
-  border: 1px solid var(--panel-border);
-  color: var(--text);
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 10px 24px 10px;
+}
+.brand-icon {
+  width: 30px;
+  height: 30px;
   border-radius: 8px;
-  padding: 8px 12px;
-  font-size: 13px;
-  cursor: pointer;
+  background: var(--accent);
   display: flex;
   align-items: center;
-  gap: 6px;
-  transition: border-color 0.15s, background 0.15s;
+  justify-content: center;
+  font-size: 15px;
+  flex-shrink: 0;
 }
-.icon-btn:hover { border-color: var(--accent); }
+.brand-name {
+  font-size: 14.5px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+.brand-sub {
+  font-size: 10.5px;
+  color: var(--text-dim);
+  margin-top: 1px;
+}
+
+.nav-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  color: var(--text-dim);
+  font-size: 13.5px;
+  font-weight: 500;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background 0.12s, color 0.12s;
+  position: relative;
+}
+.nav-item .nav-icon {
+  font-size: 15px;
+  width: 18px;
+  text-align: center;
+}
+.nav-item:hover {
+  background: var(--accent-tint);
+  color: var(--text);
+}
+.nav-item.active {
+  background: var(--accent-tint);
+  color: var(--accent);
+  font-weight: 600;
+}
+.nav-item.active::before {
+  content: "";
+  position: absolute;
+  left: -16px;
+  top: 8px;
+  bottom: 8px;
+  width: 3px;
+  border-radius: 3px;
+  background: var(--accent);
+}
+.nav-badge {
+  margin-left: auto;
+  background: var(--panel-border);
+  color: var(--text-dim);
+  font-size: 10.5px;
+  font-weight: 600;
+  padding: 1px 7px;
+  border-radius: 999px;
+}
+.nav-item.active .nav-badge {
+  background: var(--accent);
+  color: #fff;
+}
+
+.sidebar-footer {
+  margin-top: auto;
+  border-top: 1px solid var(--panel-border);
+  padding-top: 16px;
+}
+.theme-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 10px;
+}
+.theme-row-label {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 13px;
+  color: var(--text);
+}
+.theme-row-label .icon {
+  font-size: 14px;
+}
+
+/* Toggle switch */
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 42px;
+  height: 24px;
+  flex-shrink: 0;
+}
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+.switch-track {
+  position: absolute;
+  cursor: pointer;
+  inset: 0;
+  background: var(--panel-border);
+  border-radius: 999px;
+  transition: background 0.2s;
+}
+.switch-track::before {
+  content: "";
+  position: absolute;
+  height: 18px;
+  width: 18px;
+  left: 3px;
+  top: 3px;
+  background: #fff;
+  border-radius: 50%;
+  transition: transform 0.2s;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+.switch input:checked + .switch-track {
+  background: var(--accent);
+}
+.switch input:checked + .switch-track::before {
+  transform: translateX(18px);
+}
+
+/* ---------- MAIN CONTENT ---------- */
+.main-content {
+  margin-left: 240px;
+  flex: 1;
+  padding: 44px 32px;
+  display: flex;
+  justify-content: center;
+}
+.page { display: none; width: 100%; max-width: 560px; }
+.page.active { display: block; }
+#uploadPage.page { max-width: 780px; }
+
+.page-header { margin-bottom: 24px; }
+.page-header h1 { font-size: 21px; margin: 0 0 6px 0; font-weight: 700; }
+.page-header p { color: var(--text-dim); font-size: 13.5px; margin: 0; line-height: 1.5; }
+
 .card {
   background: var(--panel);
   border: 1px solid var(--panel-border);
   border-radius: 16px;
-  padding: 32px;
-  width: 100%;
-  max-width: 480px;
-  box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+  padding: 28px;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.15);
   transition: background 0.2s, border-color 0.2s;
+  margin-bottom: 20px;
 }
-.view { display: none; }
-.view.active { display: block; }
-h1 { font-size: 20px; margin: 0 0 6px 0; font-weight: 600; }
-.subtitle { color: var(--text-dim); font-size: 13px; margin: 0 0 28px 0; line-height: 1.5; }
+
+.upload-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 28px;
+  align-items: start;
+}
+.upload-col-left, .upload-col-right {
+  display: flex;
+  flex-direction: column;
+}
+.upload-col-left .drop-zone {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 180px;
+}
+.col-divider {
+  display: none;
+}
+@media (max-width: 640px) {
+  .upload-grid { grid-template-columns: 1fr; }
+}
+
 .drop-zone {
   border: 1.5px dashed var(--panel-border);
   border-radius: 12px;
@@ -89,12 +274,13 @@ h1 { font-size: 20px; margin: 0 0 6px 0; font-weight: 600; }
   transition: border-color 0.15s, background 0.15s;
   margin-bottom: 22px;
 }
-.drop-zone:hover, .drop-zone.dragover { border-color: var(--accent); background: rgba(91,140,255,0.06); }
+.drop-zone:hover, .drop-zone.dragover { border-color: var(--accent); background: var(--accent-tint); }
 .drop-zone .file-icon { font-size: 28px; margin-bottom: 8px; }
 .drop-zone .main-text { font-size: 14px; color: var(--text); }
 .drop-zone .sub-text { font-size: 12px; color: var(--text-dim); margin-top: 4px; }
 .drop-zone.has-file { border-color: var(--success); background: rgba(62,207,142,0.06); }
 #fileInput { display: none; }
+
 .field { margin-bottom: 18px; }
 label { display: block; font-size: 13px; font-weight: 500; margin-bottom: 6px; color: var(--text-dim); }
 input[type="date"], input[type="text"], input[type="number"] {
@@ -111,10 +297,12 @@ input[type="date"], input[type="text"], input[type="number"] {
 }
 input:focus { border-color: var(--accent); }
 :root[data-theme="dark"] input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.8); cursor: pointer; }
+
 .checkbox-field { margin-bottom: 18px; }
 .checkbox-label { display: flex; align-items: center; gap: 9px; font-size: 13px; color: var(--text); font-weight: 400; cursor: pointer; margin-bottom: 0; }
 .checkbox-label input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--accent); cursor: pointer; flex-shrink: 0; }
 .hint { color: var(--text-dim); font-weight: 400; font-size: 11px; }
+
 .format-row {
   display: flex;
   align-items: center;
@@ -129,6 +317,7 @@ input:focus { border-color: var(--accent); }
 .format-row .format-value { font-family: "SF Mono", Consolas, Monaco, monospace; font-size: 12.5px; color: var(--text); overflow-wrap: anywhere; }
 .format-row a.edit-link { font-size: 12.5px; color: var(--accent); text-decoration: none; white-space: nowrap; font-weight: 600; cursor: pointer; }
 .format-row a.edit-link:hover { text-decoration: underline; }
+
 .preview {
   background: var(--input-bg);
   border: 1px solid var(--panel-border);
@@ -143,6 +332,7 @@ input:focus { border-color: var(--accent); }
 .preview .label { display: block; font-family: -apple-system, sans-serif; color: var(--text-dim); font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 6px; }
 .preview .filename { color: var(--text); font-size: 14px; }
 .preview .filename.placeholder { color: var(--text-dim); font-style: italic; }
+
 .btn-row { display: flex; flex-direction: column; gap: 10px; }
 button.primary-btn, button.download-btn {
   width: 100%;
@@ -170,20 +360,67 @@ button.secondary-btn {
   color: var(--text);
   transition: border-color 0.15s, background 0.15s;
 }
-button.secondary-btn:hover:not(:disabled) { background: rgba(91,140,255,0.08); border-color: var(--accent); }
+button.secondary-btn:hover:not(:disabled) { background: var(--accent-tint); border-color: var(--accent); }
+
 .status { text-align: center; font-size: 12.5px; margin-top: 12px; min-height: 16px; color: var(--success); }
 .status.error { color: var(--error); }
-.footnote { text-align: center; font-size: 11px; color: var(--text-dim); margin-top: 24px; line-height: 1.5; }
+
+.footnote { text-align: center; font-size: 11px; color: var(--text-dim); margin-top: 20px; line-height: 1.5; }
 .footnote a { color: var(--accent); cursor: pointer; }
-.history-section { margin-top: 26px; border-top: 1px solid var(--panel-border); padding-top: 18px; }
-.history-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
-.history-header h2 { font-size: 12.5px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-dim); margin: 0; font-weight: 600; }
-.history-header button { background: none; border: none; color: var(--text-dim); font-size: 11.5px; cursor: pointer; text-decoration: underline; }
-.history-header button:hover { color: var(--accent); }
-.history-list { list-style: none; margin: 0; padding: 0; max-height: 180px; overflow-y: auto; }
-.history-list li { font-size: 12.5px; color: var(--text); padding: 8px 10px; border-radius: 6px; background: var(--input-bg); margin-bottom: 6px; font-family: "SF Mono", Consolas, Monaco, monospace; word-break: break-all; }
-.history-list li .time { display: block; font-family: -apple-system, sans-serif; color: var(--text-dim); font-size: 10.5px; margin-top: 2px; }
-.history-empty { font-size: 12.5px; color: var(--text-dim); font-style: italic; }
+
+/* ---------- HISTORY PAGE ---------- */
+.history-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+.history-header-row button {
+  background: none;
+  border: 1px solid var(--panel-border);
+  color: var(--text-dim);
+  font-size: 12px;
+  cursor: pointer;
+  padding: 7px 12px;
+  border-radius: 7px;
+  transition: border-color 0.15s, color 0.15s;
+}
+.history-header-row button:hover { color: var(--error); border-color: var(--error); }
+.history-list { list-style: none; margin: 0; padding: 0; }
+.history-list li {
+  font-size: 13px;
+  color: var(--text);
+  padding: 12px 14px;
+  border-radius: 9px;
+  background: var(--input-bg);
+  border: 1px solid var(--panel-border);
+  margin-bottom: 8px;
+  font-family: "SF Mono", Consolas, Monaco, monospace;
+  word-break: break-all;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.history-list li .time {
+  font-family: -apple-system, sans-serif;
+  color: var(--text-dim);
+  font-size: 11px;
+}
+.history-empty {
+  font-size: 13px;
+  color: var(--text-dim);
+  font-style: italic;
+  text-align: center;
+  padding: 30px 10px;
+}
+.session-note {
+  font-size: 11.5px;
+  color: var(--text-dim);
+  text-align: center;
+  margin-top: 16px;
+}
+
+/* ---------- MODAL ---------- */
 .modal-overlay { position: fixed; inset: 0; background: var(--overlay); display: none; align-items: center; justify-content: center; z-index: 1000; }
 .modal-overlay.visible { display: flex; }
 .modal-box {
@@ -203,6 +440,8 @@ button.secondary-btn:hover:not(:disabled) { background: rgba(91,140,255,0.08); b
 .modal-message { font-size: 13px; color: var(--text-dim); margin-bottom: 20px; word-break: break-word; line-height: 1.5; white-space: pre-line; }
 .modal-box button { padding: 10px 22px; border-radius: 8px; border: none; background: var(--accent); color: #fff; font-size: 13.5px; font-weight: 600; cursor: pointer; }
 .modal-box button:hover { background: var(--accent-hover); }
+
+/* ---------- FORMAT PAGE ---------- */
 .token-table { width: 100%; border-collapse: collapse; margin-bottom: 22px; font-size: 12.5px; }
 .token-table th, .token-table td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--panel-border); }
 .token-table th { color: var(--text-dim); font-weight: 600; text-transform: uppercase; font-size: 10.5px; letter-spacing: 0.03em; }
@@ -220,123 +459,219 @@ button.secondary-btn:hover:not(:disabled) { background: rgba(91,140,255,0.08); b
   transition: border-color 0.15s;
 }
 .example-chip:hover { border-color: var(--accent); }
+.section-label {
+  font-size: 12px;
+  margin: 22px 0 10px 0;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-weight: 600;
+}
+
+/* ---------- RESPONSIVE ---------- */
+@media (max-width: 780px) {
+  .sidebar {
+    position: static;
+    width: 100%;
+    height: auto;
+    flex-direction: row;
+    align-items: center;
+    padding: 12px 16px;
+    border-right: none;
+    border-bottom: 1px solid var(--panel-border);
+  }
+  .brand { padding: 0; }
+  .nav-list { flex-direction: row; margin-left: 12px; }
+  .nav-item.active::before { display: none; }
+  .sidebar-footer { margin-top: 0; margin-left: auto; border-top: none; padding-top: 0; }
+  .app-shell { flex-direction: column; }
+  .main-content { margin-left: 0; padding: 28px 16px; }
+}
 </style>
 </head>
 <body>
 
-<div class="top-bar">
-  <button class="icon-btn" id="themeToggle">🌙 <span id="themeLabel">Dark</span></button>
-</div>
+<div class="app-shell">
 
-<!-- ========== UPLOADER VIEW (default, shown when URL has no #format hash) ========== -->
-<div class="card view" id="uploaderView">
-  <h1>PDF Invoice Renamer</h1>
-  <p class="subtitle">Upload a PDF, fill in the details below, and download a renamed copy. Everything runs locally in your browser — no upload, no internet required.</p>
-
-  <div class="drop-zone" id="dropZone">
-    <div class="file-icon">📄</div>
-    <div class="main-text" id="dropZoneText">Click or drag a PDF here</div>
-    <div class="sub-text" id="dropZoneSubText">.pdf files only</div>
-    <input type="file" id="fileInput" accept="application/pdf,.pdf">
-  </div>
-
-  <div class="field">
-    <label for="dateInput">Date</label>
-    <input type="date" id="dateInput">
-  </div>
-
-  <div class="field">
-    <label for="amountInput">Amount</label>
-    <input type="number" id="amountInput" step="0.01" min="0" inputmode="decimal" placeholder="0.00">
-  </div>
-
-  <div class="field">
-    <label for="invoiceInput">Invoice Number</label>
-    <input type="text" id="invoiceInput" placeholder="e.g. 129048009">
-  </div>
-
-  <div class="field checkbox-field">
-    <label class="checkbox-label" for="decimalCheckbox">
-      <input type="checkbox" id="decimalCheckbox" checked>
-      <span>Include decimals in amount (e.g. 1234.00 vs 1234)</span>
-    </label>
-  </div>
-
-  <div class="format-row">
-    <div>
-      <div class="hint" style="margin-bottom:4px;">Current filename format</div>
-      <div class="format-value" id="currentFormatDisplay">{month} {day}- {amount}_{invoice}.pdf</div>
+  <!-- ========== SIDEBAR NAVIGATION ========== -->
+  <nav class="sidebar">
+    <div class="brand">
+      <div class="brand-icon">📄</div>
+      <div>
+        <div class="brand-name">InvoiceRenamer</div>
+        <div class="brand-sub">Runs 100% locally</div>
+      </div>
     </div>
-    <a class="edit-link" id="goToFormatLink">Edit format →</a>
-  </div>
 
-  <div class="preview">
-    <span class="label">Output filename</span>
-    <span class="filename placeholder" id="filenamePreview">Upload a file and fill in the fields…</span>
-  </div>
+    <ul class="nav-list">
+      <li class="nav-item active" data-route="" id="navUpload">
+        <span class="nav-icon">⬆️</span> Upload &amp; Rename
+      </li>
+      <li class="nav-item" data-route="format" id="navFormat">
+        <span class="nav-icon">⚙️</span> Format Settings
+      </li>
+      <li class="nav-item" data-route="history" id="navHistory">
+        <span class="nav-icon">🕘</span> History
+        <span class="nav-badge" id="historyCountBadge">0</span>
+      </li>
+    </ul>
 
-  <div class="btn-row">
-    <button class="download-btn" id="downloadBtn" disabled>Download Renamed PDF</button>
-    <button class="secondary-btn" id="saveAsBtn" disabled>Choose Location & Save…</button>
-  </div>
-  <div class="status" id="statusMsg"></div>
-
-  <div class="history-section">
-    <div class="history-header">
-      <h2>Recent renames (this session)</h2>
-      <button id="clearHistoryBtn">Clear</button>
+    <div class="sidebar-footer">
+      <div class="theme-row">
+        <div class="theme-row-label">
+          <span class="icon" id="themeIcon">🌙</span>
+          <span id="themeLabel">Dark mode</span>
+        </div>
+        <label class="switch">
+          <input type="checkbox" id="themeToggle">
+          <span class="switch-track"></span>
+        </label>
+      </div>
     </div>
-    <ul class="history-list" id="historyList"></ul>
-    <div class="history-empty" id="historyEmpty">No files renamed yet this session.</div>
-  </div>
+  </nav>
 
-  <p class="footnote">This tool does not modify the original PDF's contents or upload it anywhere — it only creates a renamed local copy. "Choose Location & Save…" lets you pick a folder (supported in Chrome/Edge); otherwise it falls back to your browser's default downloads folder. The session history clears when you close this tab.</p>
-</div>
+  <!-- ========== MAIN CONTENT ========== -->
+  <main class="main-content">
 
-<!-- ========== FORMAT SETTINGS VIEW (only shown when URL hash is #format) ========== -->
-<div class="card view" id="formatView">
-  <h1>Filename Format Settings</h1>
-  <p class="subtitle">Edit the template used to build the renamed PDF filename. Changes are saved on this device and picked up automatically by the uploader.</p>
+    <!-- ---- UPLOAD & RENAME PAGE ---- -->
+    <div class="page active" id="uploadPage">
+      <div class="page-header">
+        <h1>Upload &amp; Rename</h1>
+        <p>Upload a PDF, fill in the details, and download a renamed copy. Nothing ever leaves your browser.</p>
+      </div>
 
-  <div class="field">
-    <label for="formatInput">Filename format template</label>
-    <input type="text" id="formatInput" value="{month} {day}- {amount}_{invoice}.pdf">
-  </div>
+      <div class="card">
+        <div class="upload-grid">
 
-  <div class="preview">
-    <span class="label">Live example</span>
-    <span class="filename" id="livePreview">Jul 03- 1234.00_129048009.pdf</span>
-  </div>
+          <div class="upload-col-left">
+            <div class="drop-zone" id="dropZone">
+              <div class="file-icon">📄</div>
+              <div class="main-text" id="dropZoneText">Click or drag a PDF here</div>
+              <div class="sub-text" id="dropZoneSubText">.pdf files only</div>
+              <input type="file" id="fileInput" accept="application/pdf,.pdf">
+            </div>
 
-  <div class="btn-row" style="margin-bottom: 22px;">
-    <button class="primary-btn" id="saveFormatBtn">Save Format</button>
-    <button class="secondary-btn" id="resetFormatBtn">Reset to Default</button>
-  </div>
-  <div class="status" id="formatStatusMsg"></div>
+            <div class="preview">
+              <span class="label">Output filename</span>
+              <span class="filename placeholder" id="filenamePreview">Upload a file and fill in the fields…</span>
+            </div>
 
-  <h2 style="font-size:13px; margin: 26px 0 10px 0; color: var(--text-dim); text-transform:uppercase; letter-spacing:0.04em;">Available tokens</h2>
-  <table class="token-table">
-    <thead><tr><th>Token</th><th>Meaning</th><th>Example</th></tr></thead>
-    <tbody>
-      <tr><td><code>{month}</code></td><td>3-letter month abbreviation</td><td>Jul</td></tr>
-      <tr><td><code>{monthnum}</code></td><td>2-digit month number</td><td>07</td></tr>
-      <tr><td><code>{day}</code></td><td>2-digit day of month</td><td>03</td></tr>
-      <tr><td><code>{year}</code></td><td>4-digit year</td><td>2026</td></tr>
-      <tr><td><code>{amount}</code></td><td>Amount (decimals per checkbox on main page)</td><td>1234.00</td></tr>
-      <tr><td><code>{invoice}</code></td><td>Invoice number as typed</td><td>129048009</td></tr>
-    </tbody>
-  </table>
+            <div class="btn-row">
+              <button class="download-btn" id="downloadBtn" disabled>Download Renamed PDF</button>
+              <button class="secondary-btn" id="saveAsBtn" disabled>Choose Location &amp; Save…</button>
+            </div>
+            <div class="status" id="statusMsg"></div>
+          </div>
 
-  <h2 style="font-size:13px; margin: 0 0 10px 0; color: var(--text-dim); text-transform:uppercase; letter-spacing:0.04em;">Quick examples (click to use)</h2>
-  <div style="margin-bottom: 8px;">
-    <span class="example-chip" data-template="{month} {day}- {amount}_{invoice}.pdf">{month} {day}- {amount}_{invoice}.pdf</span>
-    <span class="example-chip" data-template="{month} {day} {year}- {amount}_{invoice}.pdf">{month} {day} {year}- {amount}_{invoice}.pdf</span>
-    <span class="example-chip" data-template="{invoice}_{month} {day}- {amount}.pdf">{invoice}_{month} {day}- {amount}.pdf</span>
-    <span class="example-chip" data-template="{monthnum}-{day}-{year}_{amount}_{invoice}.pdf">{monthnum}-{day}-{year}_{amount}_{invoice}.pdf</span>
-    <span class="example-chip" data-template="{month} {day} {amount}_{invoice}.pdf">{month} {day} {amount}_{invoice}.pdf</span>
-  </div>
+          <div class="upload-col-right">
+            <div class="field">
+              <label for="dateInput">Date</label>
+              <input type="date" id="dateInput">
+            </div>
 
-  <p class="footnote">If your template doesn't end in ".pdf", it's added automatically. Invoice numbers have characters not allowed in filenames stripped out automatically. <a id="backToUploaderLink">← Back to uploader</a></p>
+            <div class="field">
+              <label for="amountInput">Amount</label>
+              <input type="number" id="amountInput" step="0.01" min="0" inputmode="decimal" placeholder="0.00">
+            </div>
+
+            <div class="field">
+              <label for="invoiceInput">Invoice Number</label>
+              <input type="text" id="invoiceInput" placeholder="e.g. 129048009">
+            </div>
+
+            <div class="field checkbox-field">
+              <label class="checkbox-label" for="decimalCheckbox">
+                <input type="checkbox" id="decimalCheckbox" checked>
+                <span>Include decimals in amount (e.g. 1234.00 vs 1234)</span>
+              </label>
+            </div>
+
+            <div class="format-row">
+              <div>
+                <div class="hint" style="margin-bottom:4px;">Current filename format</div>
+                <div class="format-value" id="currentFormatDisplay">{month} {day}- {amount}_{invoice}.pdf</div>
+              </div>
+              <a class="edit-link" id="goToFormatLink">Edit format →</a>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <p class="footnote">"Choose Location &amp; Save…" lets you pick a folder (supported in Chrome/Edge); otherwise it falls back to your browser's default downloads folder. The original PDF is never modified or uploaded anywhere.</p>
+    </div>
+
+    <!-- ---- FORMAT SETTINGS PAGE ---- -->
+    <div class="page" id="formatPage">
+      <div class="page-header">
+        <h1>Filename Format Settings</h1>
+        <p>Edit the template used to build the renamed PDF filename. Saved on this device and picked up automatically by the uploader.</p>
+      </div>
+
+      <div class="card">
+        <div class="field">
+          <label for="formatInput">Filename format template</label>
+          <input type="text" id="formatInput" value="{month} {day}- {amount}_{invoice}.pdf">
+        </div>
+
+        <div class="preview">
+          <span class="label">Live example</span>
+          <span class="filename" id="livePreview">Jul 03- 1234.00_129048009.pdf</span>
+        </div>
+
+        <div class="btn-row" style="margin-bottom: 6px;">
+          <button class="primary-btn" id="saveFormatBtn">Save Format</button>
+          <button class="secondary-btn" id="resetFormatBtn">Reset to Default</button>
+        </div>
+        <div class="status" id="formatStatusMsg"></div>
+      </div>
+
+      <div class="card">
+        <div class="section-label" style="margin-top:0;">Available tokens</div>
+        <table class="token-table">
+          <thead><tr><th>Token</th><th>Meaning</th><th>Example</th></tr></thead>
+          <tbody>
+            <tr><td><code>{month}</code></td><td>3-letter month abbreviation</td><td>Jul</td></tr>
+            <tr><td><code>{monthnum}</code></td><td>2-digit month number</td><td>07</td></tr>
+            <tr><td><code>{day}</code></td><td>2-digit day of month</td><td>03</td></tr>
+            <tr><td><code>{year}</code></td><td>4-digit year</td><td>2026</td></tr>
+            <tr><td><code>{amount}</code></td><td>Amount (decimals per checkbox on Upload page)</td><td>1234.00</td></tr>
+            <tr><td><code>{invoice}</code></td><td>Invoice number as typed</td><td>129048009</td></tr>
+          </tbody>
+        </table>
+
+        <div class="section-label">Quick examples (click to use)</div>
+        <div>
+          <span class="example-chip" data-template="{month} {day}- {amount}_{invoice}.pdf">{month} {day}- {amount}_{invoice}.pdf</span>
+          <span class="example-chip" data-template="{month} {day} {year}- {amount}_{invoice}.pdf">{month} {day} {year}- {amount}_{invoice}.pdf</span>
+          <span class="example-chip" data-template="{invoice}_{month} {day}- {amount}.pdf">{invoice}_{month} {day}- {amount}.pdf</span>
+          <span class="example-chip" data-template="{monthnum}-{day}-{year}_{amount}_{invoice}.pdf">{monthnum}-{day}-{year}_{amount}_{invoice}.pdf</span>
+          <span class="example-chip" data-template="{month} {day} {amount}_{invoice}.pdf">{month} {day} {amount}_{invoice}.pdf</span>
+        </div>
+      </div>
+
+      <p class="footnote">If your template doesn't end in ".pdf", it's added automatically. Invoice numbers have characters not allowed in filenames stripped out automatically.</p>
+    </div>
+
+    <!-- ---- HISTORY PAGE ---- -->
+    <div class="page" id="historyPage">
+      <div class="page-header">
+        <h1>History</h1>
+        <p>Files you've renamed and downloaded or saved during this browser session.</p>
+      </div>
+
+      <div class="card">
+        <div class="history-header-row">
+          <span class="hint" id="historySummary">0 files this session</span>
+          <button id="clearHistoryBtn">Clear history</button>
+        </div>
+        <ul class="history-list" id="historyList"></ul>
+        <div class="history-empty" id="historyEmpty">No files renamed yet this session.</div>
+      </div>
+      <p class="session-note">This history is stored only for the current browser tab session and clears automatically when you close the tab.</p>
+    </div>
+
+  </main>
 </div>
 
 <div class="modal-overlay" id="modalOverlay">
@@ -359,19 +694,20 @@ button.secondary-btn:hover:not(:disabled) { background: rgba(91,140,255,0.08); b
   // ================= THEME =================
   const themeToggle = document.getElementById('themeToggle');
   const themeLabel = document.getElementById('themeLabel');
+  const themeIcon = document.getElementById('themeIcon');
   function applyTheme(theme) {
     document.documentElement.setAttribute('data-theme', theme);
-    themeLabel.textContent = theme === 'dark' ? 'Dark' : 'Light';
-    themeToggle.firstChild.textContent = theme === 'dark' ? '🌙 ' : '☀️ ';
+    themeToggle.checked = (theme === 'light');
+    themeLabel.textContent = theme === 'dark' ? 'Dark mode' : 'Light mode';
+    themeIcon.textContent = theme === 'dark' ? '🌙' : '☀️';
   }
   function initTheme() {
     const saved = localStorage.getItem(THEME_KEY) ||
       (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
     applyTheme(saved);
   }
-  themeToggle.addEventListener('click', () => {
-    const current = document.documentElement.getAttribute('data-theme');
-    const next = current === 'dark' ? 'light' : 'dark';
+  themeToggle.addEventListener('change', () => {
+    const next = themeToggle.checked ? 'light' : 'dark';
     localStorage.setItem(THEME_KEY, next);
     applyTheme(next);
   });
@@ -393,25 +729,42 @@ button.secondary-btn:hover:not(:disabled) { background: rgba(91,140,255,0.08); b
   modalCloseBtn.addEventListener('click', hideModal);
   modalOverlay.addEventListener('click', (e) => { if (e.target === modalOverlay) hideModal(); });
 
-  // ================= ROUTING (hash-based: #format shows settings view) =================
-  const uploaderView = document.getElementById('uploaderView');
-  const formatView = document.getElementById('formatView');
+  // ================= ROUTING (hash-based) =================
+  const pages = {
+    '': document.getElementById('uploadPage'),
+    'format': document.getElementById('formatPage'),
+    'history': document.getElementById('historyPage')
+  };
+  const navItems = {
+    '': document.getElementById('navUpload'),
+    'format': document.getElementById('navFormat'),
+    'history': document.getElementById('navHistory')
+  };
+  function currentRoute() {
+    const h = window.location.hash.replace('#', '');
+    return pages[h] ? h : '';
+  }
   function renderRoute() {
-    const isFormat = window.location.hash === '#format';
-    uploaderView.classList.toggle('active', !isFormat);
-    formatView.classList.toggle('active', isFormat);
-    if (isFormat) loadFormatView();
-    else refreshFormatDisplay();
+    const route = currentRoute();
+    Object.keys(pages).forEach((key) => {
+      pages[key].classList.toggle('active', key === route);
+      navItems[key].classList.toggle('active', key === route);
+    });
+    if (route === 'format') loadFormatPage();
+    if (route === 'history') renderHistory();
+    if (route === '') refreshUploadFormatDisplay();
   }
   window.addEventListener('hashchange', renderRoute);
-  document.getElementById('goToFormatLink').addEventListener('click', () => { window.location.hash = '#format'; });
-  document.getElementById('backToUploaderLink').addEventListener('click', () => { window.location.hash = ''; });
+  Object.keys(navItems).forEach((key) => {
+    navItems[key].addEventListener('click', () => { window.location.hash = key; });
+  });
+  document.getElementById('goToFormatLink').addEventListener('click', () => { window.location.hash = 'format'; });
 
   function getFormatTemplate() {
     return localStorage.getItem(FORMAT_KEY) || DEFAULT_FORMAT;
   }
 
-  // ================= UPLOADER VIEW LOGIC =================
+  // ================= UPLOAD PAGE LOGIC =================
   const dropZone = document.getElementById('dropZone');
   const dropZoneText = document.getElementById('dropZoneText');
   const dropZoneSubText = document.getElementById('dropZoneSubText');
@@ -425,13 +778,10 @@ button.secondary-btn:hover:not(:disabled) { background: rgba(91,140,255,0.08); b
   const downloadBtn = document.getElementById('downloadBtn');
   const saveAsBtn = document.getElementById('saveAsBtn');
   const statusMsg = document.getElementById('statusMsg');
-  const historyList = document.getElementById('historyList');
-  const historyEmpty = document.getElementById('historyEmpty');
-  const clearHistoryBtn = document.getElementById('clearHistoryBtn');
 
   let uploadedFile = null;
 
-  function refreshFormatDisplay() {
+  function refreshUploadFormatDisplay() {
     currentFormatDisplay.textContent = getFormatTemplate();
     updatePreview();
   }
@@ -520,6 +870,12 @@ button.secondary-btn:hover:not(:disabled) { background: rgba(91,140,255,0.08); b
   }
 
   // ---- Session history (sessionStorage - cleared when tab closes) ----
+  const historyList = document.getElementById('historyList');
+  const historyEmpty = document.getElementById('historyEmpty');
+  const historySummary = document.getElementById('historySummary');
+  const historyCountBadge = document.getElementById('historyCountBadge');
+  const clearHistoryBtn = document.getElementById('clearHistoryBtn');
+
   function getHistory() {
     try { return JSON.parse(sessionStorage.getItem(HISTORY_KEY)) || []; }
     catch (e) { return []; }
@@ -528,12 +884,17 @@ button.secondary-btn:hover:not(:disabled) { background: rgba(91,140,255,0.08); b
   function addToHistory(filename) {
     const history = getHistory();
     history.unshift({ filename, time: new Date().toLocaleString() });
-    saveHistoryList(history.slice(0, 30));
-    renderHistory();
+    saveHistoryList(history.slice(0, 50));
+    updateHistoryBadge();
+    if (currentRoute() === 'history') renderHistory();
+  }
+  function updateHistoryBadge() {
+    historyCountBadge.textContent = getHistory().length;
   }
   function renderHistory() {
     const history = getHistory();
     historyList.innerHTML = '';
+    historySummary.textContent = history.length + (history.length === 1 ? ' file this session' : ' files this session');
     if (history.length === 0) {
       historyEmpty.style.display = 'block';
       historyList.style.display = 'none';
@@ -543,15 +904,22 @@ button.secondary-btn:hover:not(:disabled) { background: rgba(91,140,255,0.08); b
     historyList.style.display = 'block';
     history.forEach((entry) => {
       const li = document.createElement('li');
-      li.innerHTML = entry.filename.replace(/</g, '&lt;') + '<span class="time">' + entry.time + '</span>';
+      const nameSpan = document.createElement('span');
+      nameSpan.textContent = entry.filename;
+      const timeSpan = document.createElement('span');
+      timeSpan.className = 'time';
+      timeSpan.textContent = entry.time;
+      li.appendChild(nameSpan);
+      li.appendChild(timeSpan);
       historyList.appendChild(li);
     });
   }
   clearHistoryBtn.addEventListener('click', () => {
     sessionStorage.removeItem(HISTORY_KEY);
     renderHistory();
+    updateHistoryBadge();
   });
-  renderHistory();
+  updateHistoryBadge();
 
   downloadBtn.addEventListener('click', () => {
     if (!uploadedFile) { setStatus('Please upload a PDF first.', true); return; }
@@ -619,7 +987,7 @@ button.secondary-btn:hover:not(:disabled) { background: rgba(91,140,255,0.08); b
     statusMsg.classList.toggle('error', !!isError);
   }
 
-  // ================= FORMAT SETTINGS VIEW LOGIC =================
+  // ================= FORMAT PAGE LOGIC =================
   const formatInput = document.getElementById('formatInput');
   const livePreview = document.getElementById('livePreview');
   const saveFormatBtn = document.getElementById('saveFormatBtn');
@@ -643,7 +1011,7 @@ button.secondary-btn:hover:not(:disabled) { background: rgba(91,140,255,0.08); b
   }
   formatInput.addEventListener('input', updateLivePreview);
 
-  function loadFormatView() {
+  function loadFormatPage() {
     formatInput.value = getFormatTemplate();
     updateLivePreview();
     formatStatusMsg.textContent = '';
